@@ -10,11 +10,8 @@ namespace Nop.Plugin.Misc.PolyCommerce
     {
         public static string GetBaseUrl()
         {
-            #if DEBUG
-                return "https://localhost:44340";
-            #else
-                return "https://portal.polycommerce.com";
-            #endif
+            //return "https://localhost:44340";
+            return "https://portal.polycommerce.com";
         }
 
         public static async Task<PolyCommerceStore> GetPolyCommerceStoreByToken(string token)

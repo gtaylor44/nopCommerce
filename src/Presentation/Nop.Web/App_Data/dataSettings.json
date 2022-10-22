@@ -1,5 +1,0 @@
-{
-    "DataProvider": "sqlserver",
-    "DataConnectionString": "Data Source=localhost;Initial Catalog=BudgetPatterns;Integrated Security=True;Pooling=false;Encrypt=False;",
-    "RawDataSettings": {}
-}
