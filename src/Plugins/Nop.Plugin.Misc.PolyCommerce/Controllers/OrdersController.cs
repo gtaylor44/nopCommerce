@@ -127,6 +127,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
 
                 if (store == null)
                 {
+                    await _logger.ErrorAsync($"Could not find Store via token '{storeToken}'");
                     return Unauthorized();
                 }
 
@@ -134,34 +135,38 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
 
                 if (model == null)
                 {
-                    throw new Exception("Model can't be null");
+                    throw new ArgumentNullException("Model can't be null");
                 }
 
                 if (model.Address == null)
                 {
-                    throw new Exception("Address can't be null");
+                    throw new ArgumentNullException("Address can't be null");
                 }
 
                 if (model.OrderItems == null || !model.OrderItems.Any())
                 {
-                    throw new Exception("At least one OrderItem is required");
+                    throw new InvalidOperationException("At least one OrderItem is required");
                 }
 
                 if (!Enum.IsDefined(typeof(PaymentStatus), model.PaymentStatusId))
                 {
-                    throw new Exception($"PaymentStatusId: {model.PaymentStatusId} not recognised");
+                    throw new InvalidOperationException($"PaymentStatusId: {model.PaymentStatusId} not recognised");
                 }
 
                 if (!Enum.IsDefined(typeof(OrderStatus), model.OrderStatusId))
                 {
-                    throw new Exception($"OrderStatusId: {model.OrderStatusId} not recognised");
+                    throw new InvalidOperationException($"OrderStatusId: {model.OrderStatusId} not recognised");
+                }
+
+                if (!Enum.IsDefined(typeof(ShippingStatus), model.ShippingStatusId))
+                {
+                    throw new InvalidOperationException($"ShippingStatusId: {model.ShippingStatusId} not recognised");
                 }
 
                 var country = await _countryService.GetCountryByTwoLetterIsoCodeAsync(model.Address.TwoLetterCountryCode);
 
                 // only english supported
                 var englishLanguage = _languageRepository.Table.First(x => x.Name == "English");
-
 
 
                 var customer = new Customer
@@ -187,7 +192,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                     City = model.Address.City,
                     PhoneNumber = model.Address.PhoneNumber,
                     Email = model.Email,
-                    CountryId = country.Id,
+                    CountryId = country?.Id,
                     Company = model.Address.Company,
                     ZipPostalCode = model.Address.ZipPostalCode
                 };
@@ -261,7 +266,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                     PaidDateUtc = null,
                     BillingAddressId = shippingAddress.Id,
                     ShippingAddressId = shippingAddress.Id,
-                    ShippingStatus = ShippingStatus.NotYetShipped,
+                    ShippingStatus = (ShippingStatus)model.ShippingStatusId,
                     ShippingMethod = model.ShippingMethod,
                     PickupInStore = false,
                     CustomValuesXml = string.Empty,
@@ -293,6 +298,11 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                     var productId = productCombination?.ProductId ?? (int)orderItem.ExternalProductId;
 
                     var product = await _productRepository.GetByIdAsync(productId);
+
+                    if (product == null)
+                    {
+                        throw new InvalidOperationException($"Could not find product by id (ProductId = {productId})");
+                    }
 
                     var newItem = new OrderItem
                     {

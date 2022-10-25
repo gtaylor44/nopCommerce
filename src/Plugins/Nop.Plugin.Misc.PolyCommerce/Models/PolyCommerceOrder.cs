@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Nop.Core.Domain.Shipping;
 
 namespace Nop.Plugin.Misc.PolyCommerce.Models
 {
@@ -15,6 +16,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Models
         public string ShippingMethod { get; set; }
         public int PaymentStatusId { get; set; }
         public int OrderStatusId { get; set; }
+        public int ShippingStatusId { get; set; }
         public decimal OrderShippingTotalInclTax { get; set; }
         public decimal OrderShippingTotalExclTax { get; set; }
         public PolyCommerceAddress Address { get; set; }
