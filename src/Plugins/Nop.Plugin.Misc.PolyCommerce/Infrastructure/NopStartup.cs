@@ -9,7 +9,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Infrastructure
 {
     public class NopStartup : INopStartup
     {
-        public int Order => 2;
+        public int Order => 9999;
 
         public void Configure(IApplicationBuilder application)
         {

@@ -376,7 +376,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
 
         [HttpGet]
         [Route("api/polycommerce/orders/get_orders")]
-        public async Task<IActionResult> GetOrders(string updatedAtMin, string updatedAtMax)
+        public async Task<IActionResult> GetOrders(DateTime? updatedAtMin, DateTime? updatedAtMax)
         {
             var dataSettings = DataSettingsManager.LoadSettings();
             var storeToken = Request.Headers.TryGetValue("Store-Token", out var values) ? values.First() : null;
@@ -388,18 +388,16 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                 return Unauthorized();
             }
 
-            var updatedAtMinDate = DateTime.TryParseExact(updatedAtMin, "o", CultureInfo.InvariantCulture, DateTimeStyles.None, out var updatedAtMinDateVal) ? updatedAtMinDateVal : (DateTime?)null;
-            var updatedAtMaxDate = DateTime.TryParseExact(updatedAtMax, "o", CultureInfo.InvariantCulture, DateTimeStyles.None, out var updatedAtMaxDateVal) ? updatedAtMaxDateVal : (DateTime?)null;
-
-            if (updatedAtMinDate == null)
+            if (!updatedAtMin.HasValue)
             {
-                throw new InvalidOperationException($"Could not case updatedAtMin as DateTime. updatedAtMin = {updatedAtMin}");
+                throw new ArgumentNullException("get_orders - updatedAtMin parameter is required.");
             }
 
-            if (updatedAtMaxDate == null)
+            if (!updatedAtMax.HasValue)
             {
-                throw new InvalidOperationException($"Could not case updatedAtMax as DateTime. updatedAtMax = {updatedAtMax}");
+                throw new ArgumentNullException("get_orders - updatedAtMax parameter is required.");
             }
+
 
             var orderQuery = @"select sh.ShippedDateUtc, 
                                sh.TrackingNumber,
@@ -420,7 +418,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
 
             using (var conn = new SqlConnection(dataSettings.ConnectionString))
             {
-                var orders = await conn.QueryAsync<PolyCommerceOrderItem>(orderQuery, new { OrdersAfterDate = updatedAtMinDate, OrdersBeforeDate = updatedAtMaxDate });
+                var orders = await conn.QueryAsync<PolyCommerceOrderItem>(orderQuery, new { OrdersAfterDate = updatedAtMin.Value, OrdersBeforeDate = updatedAtMax.Value });
                 var groupedOrders = orders.GroupBy(x => x.ShipmentId).Select(x => new PolyCommerceShipmentHeader 
                 { 
                     ShipmentId = x.First().ShipmentId, 
