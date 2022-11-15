@@ -26,6 +26,9 @@ using Dapper;
 using Nop.Plugin.Misc.PolyCommerce.Models.GetOrders;
 using PolyCommerceOrderItem = Nop.Plugin.Misc.PolyCommerce.Models.GetOrders.PolyCommerceOrderItem;
 using System.Globalization;
+using System.Configuration;
+using Nop.Services.Configuration;
+using Nop.Services.Helpers;
 
 namespace Nop.Plugin.Misc.PolyCommerce.Controllers
 {
@@ -47,6 +50,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
         private readonly IRepository<Product> _productRepository;
         private readonly ICurrencyService _currencyService;
         private readonly CurrencySettings _currencySettings;
+        private readonly IDateTimeHelper _dateTimeHelper;
         private readonly IProductAttributeService _productAttributeService;
         private readonly IAddressService _addressService;
 
@@ -67,7 +71,8 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
             IProductService productService,
             IAddressService addressService,
             IRepository<Product> productRepository,
-            IProductAttributeService productAttributeService)
+            IProductAttributeService productAttributeService,
+            IDateTimeHelper dateTimeHelper)
         {
             _customerActivityService = customerActivityService;
             _localizationService = localizationService;
@@ -87,6 +92,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
             _currencySettings = currencySettings;
             _productAttributeService = productAttributeService;
             _addressService = addressService;
+            _dateTimeHelper = dateTimeHelper;
         }
 
         [HttpGet]
@@ -398,11 +404,12 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                 throw new ArgumentNullException("get_orders - updatedAtMax parameter is required.");
             }
 
+            var storeTimeZone = _dateTimeHelper.DefaultStoreTimeZone;
 
             var orderQuery = @"select sh.ShippedDateUtc, 
                                sh.TrackingNumber,
                                sh.OrderId,
-                               sh.CreatedOnUtc as CreatedOn,
+                               sh.CreatedOnUtc as ShippedDate,
                                shi.Quantity as ShippedQuantity,
                                shi.ShipmentId,
                                oi.Quantity as OrderedQuantity,
@@ -416,19 +423,25 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                                where sh.CreatedOnUtc >= @OrdersAfterDate
                                and sh.CreatedOnUtc < @OrdersBeforeDate";
 
+
             using (var conn = new SqlConnection(dataSettings.ConnectionString))
             {
                 var orders = await conn.QueryAsync<PolyCommerceOrderItem>(orderQuery, new { OrdersAfterDate = updatedAtMin.Value, OrdersBeforeDate = updatedAtMax.Value });
-                var groupedOrders = orders.GroupBy(x => x.ShipmentId).Select(x => new PolyCommerceShipmentHeader 
-                { 
-                    ShipmentId = x.First().ShipmentId, 
-                    OrderId = x.First().OrderId, 
-                    ShippingStatusId = x.First().ShippingStatusId, 
+                var groupedOrders = orders.GroupBy(x => x.ShipmentId).Select(x => new PolyCommerceShipmentHeader
+                {
+                    ShipmentId = x.First().ShipmentId,
+                    OrderId = x.First().OrderId,
+                    ShippingStatusId = x.First().ShippingStatusId,
                     TrackingNumber = x.First().TrackingNumber,
                     ShippedDate = x.First().ShippedDate,
                     ShippingMethod = x.First().ShippingMethod,
-                    OrderItems = x.ToList() 
+                    OrderItems = x.ToList()
                 });
+
+                foreach (var groupedOrder in groupedOrders)
+                {
+                    groupedOrder.ShippedDate = TimeZoneInfo.ConvertTimeFromUtc(groupedOrder.ShippedDate, storeTimeZone);
+                }
 
                 var result = new PolyCommerceGetOrdersResult
                 {
