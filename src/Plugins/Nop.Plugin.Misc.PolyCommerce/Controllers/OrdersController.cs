@@ -433,15 +433,10 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                     OrderId = x.First().OrderId,
                     ShippingStatusId = x.First().ShippingStatusId,
                     TrackingNumber = x.First().TrackingNumber,
-                    ShippedDate = x.First().ShippedDate,
+                    ShippedDate = TimeZoneInfo.ConvertTimeFromUtc(x.First().ShippedDate, storeTimeZone),
                     ShippingMethod = x.First().ShippingMethod,
                     OrderItems = x.ToList()
                 });
-
-                foreach (var groupedOrder in groupedOrders)
-                {
-                    groupedOrder.ShippedDate = TimeZoneInfo.ConvertTimeFromUtc(groupedOrder.ShippedDate, storeTimeZone);
-                }
 
                 var result = new PolyCommerceGetOrdersResult
                 {
