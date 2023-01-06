@@ -190,7 +190,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Controllers
                 Name = product.Name,
                 Price = product.Price,
                 Sku = product.Sku,
-                Depth = product.Length,
+                Length = product.Length,
                 Width = product.Width,
                 Slug = await _urlRecordService.GetSeNameAsync(product),
                 RetailPrice = product.OldPrice,

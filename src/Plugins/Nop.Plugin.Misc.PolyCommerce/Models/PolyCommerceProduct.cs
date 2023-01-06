@@ -21,7 +21,7 @@ namespace Nop.Plugin.Misc.PolyCommerce.Models
 
         public decimal? Width { get; set; }
 
-        public decimal? Depth { get; set; }
+        public decimal? Length { get; set; }
 
         public decimal? Height { get; set; }
 
